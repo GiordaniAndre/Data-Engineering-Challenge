@@ -202,7 +202,7 @@ To trigger the DAG whenever a new file is uploaded to S3, we can create an S3 no
 Overall, this infrastructure is highly scalable and flexible, making it well-suited to handle large volumes of data and accommodate future growth.
 
 
-#Azure Infra
+# Azure Infra
 
 ![Infrastructure on Azure](/img/Azure.png)
 
