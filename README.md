@@ -49,7 +49,14 @@ docker exec hadoop-namenode powershell.exe -Command "hadoop fs -copyFromLocal /t
 
 ````
 
-11. The DAG will execute in the following sequence:
+11. If you want to run the spark to test something, you can do this by:
+````
+docker exec -it spark-master bash
+````
+For pyspark:
+``pyspark`` For scala-spark: ``spark-shell``
+
+12.The DAG will execute in the following sequence:
 ````
                   +-----------------------+
                   |                       |
@@ -102,9 +109,9 @@ docker exec hadoop-namenode powershell.exe -Command "hadoop fs -copyFromLocal /t
 
 Wait for it to finish the execution.
 
-12. To check the Spark UI go: [http://localhost:8888](http://localhost:8888)
+13.To check the Spark UI go: [http://localhost:8888](http://localhost:8888)
 
-13. Connecting in to the PostgreSQL:
+14.Connecting in to the PostgreSQL:
 
 ````
 docker exec -it jobsity-postgres bash
@@ -115,7 +122,7 @@ select * from tripdata limit 10;
 select * from raw_tripsdata limit 10;
 ````
 
-14.Connect to the API to get weekly avg with a bounding box.
+15.Connect to the API to get weekly avg with a bounding box.
 
 ````
 wget http://localhost:50555/
@@ -224,3 +231,42 @@ From the two most commonly appearing regions, which is the latest datasource?
 
 What regions has the "cheap_mobile" datasource appeared in?
 ````
+
+# Explanation
+
+When you run ``docker-compose up`` inside the data-engineering-challenge directory, it will start the Docker with the services and ports configured as it was shown in the previous section.
+
+The ``localhost:8080`` is configured to the webserver of the airflow UI, where we can start the dags and check if our ingestion and processing was finished.
+
+The ``localhost:8888`` is configured to the SparkUI, where we can see the running applications, completed applications, workers and everything related to the spark.
+
+The ``localhost:5555`` is configured to the web interface of the Flower UI service, that is a web-based tool that provides real-time view of the tasks and workers in the celery-based distributed system.
+
+The ``localhost:50555`` is the host port that is mapped to the container port 5000 for our API service.
+
+When the airflow is ready to run, we should run the add-file.bat or the Makefile (depending if you are in ``windows`` or ``linux``) to copy the data inside the directory dataset to the landing zone in the HDFS.
+It was designed to follow the architecture layers of a data lake, which consists in a landing zone, bronze layer, silver layer and gold layer. In this project, the landing zone inside the HDFS means that the data will be as equal as it was in the source.
+The ``second_layer_processing_job`` will be responsible to get the data from the landing zone and format it into a parquet into the bronze zone and no other transformations will be made in that layer.
+The ``third_layer_processing_job`` will be responsible to make the data transformations, to set up and convert the schemas and data types and save it into the silver layer of the storage.
+The ``postgre_ingestion_job`` will be responsible for the last layer of our project, which instead of being a hdfs layer, we decided to use it as an analytical layer inside a postgre to have a better performance on the queries.
+
+When you click to trig the DAG in Airflow, a sequence of ingestion and processing will start. The DAG controls that sequence of processing and one processing will only start when the previous one finishes. We configured for an auto retry once 1 minute after the failure.
+
+While this is occurring, the API made with Flask is still running and waiting for a request. When you make the wget request as said in the previous section, it will send a rest request to the rest api and run the query inside the postgre that were configured and will retrieve the response for the question of the challenge.
+
+Also, while everything is running, the hadoop, spark, and airflow are still running and you can use it as you want. If you need to access spark to test anything about it, you can access it by:
+````
+docker exec -it spark-master bash
+````
+
+Also, you can use the HDFS as a store. The ``Makefile`` and ``add-file.bat`` have examples of how to copy files to the hdfs such a csv, it is like:
+````
+docker cp dataset\trips.csv hadoop-namenode:\
+docker exec hadoop-namenode bash -c "hadoop dfs -mkdir -p hdfs:///data/landing/tripdata/"
+docker exec hadoop-namenode bash -c "hadoop fs -copyFromLocal /trips.csv hdfs:///data/landing/tripdata/trips.csv"
+````
+
+You just have to pay attention in your OS, the commands can change a bit depending on the OS you are running.
+
+
+Since the tools and technologies used in this project are all focused on big data and everyone has it own prove of scalability, by the usage of spark and HDFS and since it is a distributed system, the scalability of the solution is proven by itself just by the usage of every technology here.
