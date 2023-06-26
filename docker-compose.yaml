@@ -14,8 +14,6 @@ services:
       - jobsity-postgres
     environment:
       SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://jobsity:jobsity@jobsity-postgres:5432/jobsity
-    networks:
-      - default
     ports:
       - 50555:5000
     volumes:
